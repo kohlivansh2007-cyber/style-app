@@ -8,12 +8,51 @@ import BodyArchitectureQuestionnaire from '../components/BodyArchitectureQuestio
 import SectionQuestionnaire from '../components/SectionQuestionnaire'
 import { MALE_SECTION_QUESTIONS } from '../config/maleConsultationQuestions'
 
-function buildConsultationUpdatePayload(consultation) {
+const SECTION_COLUMN_MAP = {
+  identity_lifestyle: 'identity_lifestyle',
+  body_architecture: 'body_architecture',
+  body_fit_architecture: 'body_fit_architecture',
+  face_grooming: 'face_grooming',
+  color_intelligence: 'color_intelligence',
+  personal_style: 'personal_style',
+  wardrobe_audit: 'wardrobe_audit',
+  transformation_goals: 'transformation_goals',
+  stylist_observations: 'stylist_notes',
+  generate_blueprint: 'generate_blueprint',
+}
+
+const CONSULTATION_SELECT_COLUMNS = `
+  client_id,
+  identity_lifestyle,
+  body_architecture,
+  body_fit_architecture,
+  face_grooming,
+  color_intelligence,
+  personal_style,
+  wardrobe_audit,
+  transformation_goals,
+  stylist_notes,
+  generate_blueprint
+`
+
+function objectOrEmpty(value) {
+  return typeof value === 'object' && value !== null ? value : {}
+}
+
+function buildConsultationState(record) {
+  if (!record) return {}
+
   return {
-    consultation,
-    body_architecture: consultation?.body_architecture ?? null,
-    body_fit_architecture: consultation?.body_fit_architecture ?? null,
-    face_grooming: consultation?.face_grooming ?? null,
+    identity_lifestyle: objectOrEmpty(record.identity_lifestyle),
+    body_architecture: objectOrEmpty(record.body_architecture),
+    body_fit_architecture: objectOrEmpty(record.body_fit_architecture),
+    face_grooming: objectOrEmpty(record.face_grooming),
+    color_intelligence: objectOrEmpty(record.color_intelligence),
+    personal_style: objectOrEmpty(record.personal_style),
+    wardrobe_audit: objectOrEmpty(record.wardrobe_audit),
+    transformation_goals: objectOrEmpty(record.transformation_goals),
+    stylist_observations: { stylist_notes: record.stylist_notes ?? '' },
+    generate_blueprint: record.generate_blueprint ?? '',
   }
 }
 
@@ -59,7 +98,18 @@ export default function Consultation() {
       }
 
       setClient(data)
-      setConsultation(typeof data.consultation === 'object' && data.consultation !== null ? data.consultation : {})
+
+      const { data: consultationRecord, error: consultationError } = await supabase
+        .from('consultations')
+        .select(CONSULTATION_SELECT_COLUMNS)
+        .eq('client_id', clientId)
+        .maybeSingle()
+
+      if (consultationError) {
+        setError('Failed to load consultation data.')
+      }
+
+      setConsultation(buildConsultationState(consultationRecord))
       const firstKey = data.gender === 'Female' ? FEMALE_SECTIONS[0].key : MALE_SECTIONS[0].key
       setActiveSectionKey(firstKey)
       setLoading(false)
@@ -68,65 +118,41 @@ export default function Consultation() {
     load()
   }, [clientId, user])
 
-  const updateSection = useCallback(
-    (key, value) => {
-      setConsultation((prev) => ({ ...prev, [key]: value }))
-    },
-    []
-  )
+  const saveSection = useCallback(
+    async (sectionKey, value) => {
+      if (!clientId) return
+      const column = SECTION_COLUMN_MAP[sectionKey]
+      if (!column) return
 
-  const saveConsultation = useCallback(async () => {
-    if (!clientId || !user) return
-    setSaving(true)
-    const { error: updateError } = await supabase
-      .from('clients')
-      .update(buildConsultationUpdatePayload(consultation))
-      .eq('id', clientId)
-      .eq('stylist_id', user.id)
-
-    if (updateError) setError('Failed to save.')
-    setSaving(false)
-  }, [clientId, user, consultation])
-
-  const saveConsultationWithPayload = useCallback(
-    async (payload) => {
-      if (!clientId || !user) return
       setSaving(true)
-      const { error: updateError } = await supabase
-        .from('clients')
-        .update(buildConsultationUpdatePayload(payload))
-        .eq('id', clientId)
-        .eq('stylist_id', user.id)
+      const { error: upsertError } = await supabase
+        .from('consultations')
+        .upsert({ client_id: clientId, [column]: value }, { onConflict: 'client_id' })
 
-      if (updateError) setError('Failed to save.')
+      if (upsertError) setError('Failed to save.')
       setSaving(false)
     },
-    [clientId, user]
+    [clientId]
   )
 
-  const handleBodyArchitectureSelect = useCallback(
-    (field, optionValue) => {
-      const sectionKey =
-        client?.gender === 'Female' ? 'body_architecture' : 'body_fit_architecture'
-      const current = consultation[sectionKey] || {}
-      const nextBody = { ...current, [field]: optionValue }
-      const nextConsultation = { ...consultation, [sectionKey]: nextBody }
-      setConsultation(nextConsultation)
-      saveConsultationWithPayload(nextConsultation)
+  const handleSectionSelect = useCallback(
+    (sectionKey, field, optionValue) => {
+      setConsultation((prev) => {
+        const current = objectOrEmpty(prev[sectionKey])
+        const nextSection = { ...current, [field]: optionValue }
+        saveSection(sectionKey, nextSection)
+        return { ...prev, [sectionKey]: nextSection }
+      })
     },
-    [consultation, saveConsultationWithPayload, client?.gender]
+    [saveSection]
   )
 
-  const handleFaceGroomingSelect = useCallback(
-    (field, optionValue) => {
-      const sectionKey = 'face_grooming'
-      const current = consultation[sectionKey] || {}
-      const nextFaceGrooming = { ...current, [field]: optionValue }
-      const nextConsultation = { ...consultation, [sectionKey]: nextFaceGrooming }
-      setConsultation(nextConsultation)
-      saveConsultationWithPayload(nextConsultation)
+  const handleGenerateBlueprintChange = useCallback(
+    (value) => {
+      setConsultation((prev) => ({ ...prev, generate_blueprint: value }))
+      saveSection('generate_blueprint', value)
     },
-    [consultation, saveConsultationWithPayload]
+    [saveSection]
   )
 
   const handleLogout = async () => {
@@ -199,21 +225,26 @@ export default function Consultation() {
             >
               Dashboard
             </button>
-            <span className="text-charcoal/40">/</span>
-            <span className="text-sm tracking-[0.15em] text-black">
-              {client?.name} · {client?.gender} Consultation
-            </span>
+            <div>
+              <h1 className="text-sm tracking-[0.24em] uppercase text-charcoal">
+                Consultation Workspace
+              </h1>
+              <p className="text-[10px] tracking-[0.22em] uppercase text-charcoal/55 mt-0.5">
+                {client?.name} • {client?.gender}
+              </p>
+            </div>
           </div>
+
           <button
             onClick={handleLogout}
-            className="rounded-lg border border-charcoal/20 px-4 py-2 text-xs tracking-[0.18em] uppercase bg-white/80 hover:bg-charcoal/5 transition text-charcoal"
+            className="rounded-lg border border-black/15 px-3 py-1.5 text-[11px] tracking-[0.2em] uppercase bg-white/80 hover:bg-charcoal/5 transition text-charcoal"
           >
             Logout
           </button>
         </div>
       </header>
 
-      <div className="flex-1 flex min-h-0">
+      <div className="flex flex-1 min-h-0">
         <aside className="w-56 shrink-0 border-r border-black/8 bg-white/60 flex flex-col py-8">
           <div className="px-4 mb-8">
             <input
@@ -283,14 +314,18 @@ export default function Consultation() {
                 activeSection.key === 'body_fit_architecture' ? (
                 <BodyArchitectureQuestionnaire
                   value={consultation[activeSection.key] || {}}
-                  onSelect={handleBodyArchitectureSelect}
+                  onSelect={(field, optionValue) =>
+                    handleSectionSelect(activeSection.key, field, optionValue)
+                  }
                   saving={saving}
                 />
-              ) : activeSection.key === 'face_grooming' && client?.gender === 'Male' ? (
+              ) : MALE_SECTION_QUESTIONS[activeSection.key] ? (
                 <SectionQuestionnaire
-                  questions={MALE_SECTION_QUESTIONS.face_grooming}
-                  value={consultation.face_grooming || {}}
-                  onSelect={handleFaceGroomingSelect}
+                  questions={MALE_SECTION_QUESTIONS[activeSection.key]}
+                  value={consultation[activeSection.key] || {}}
+                  onSelect={(field, optionValue) =>
+                    handleSectionSelect(activeSection.key, field, optionValue)
+                  }
                   saving={saving}
                 />
               ) : activeSection.key === 'generate_blueprint' ? (
@@ -305,11 +340,8 @@ export default function Consultation() {
                     blueprint text.
                   </p>
                   <textarea
-                    value={consultation[activeSection.key] ?? ''}
-                    onChange={(e) =>
-                      updateSection(activeSection.key, e.target.value)
-                    }
-                    onBlur={saveConsultation}
+                    value={consultation.generate_blueprint ?? ''}
+                    onChange={(e) => handleGenerateBlueprintChange(e.target.value)}
                     rows={12}
                     className="w-full rounded-xl bg-cream border border-black/10 px-4 py-3 text-sm text-black placeholder:text-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold transition resize-none"
                     placeholder="Blueprint summary…"
@@ -324,9 +356,12 @@ export default function Consultation() {
                   <textarea
                     value={consultation[activeSection.key] ?? ''}
                     onChange={(e) =>
-                      updateSection(activeSection.key, e.target.value)
+                      setConsultation((prev) => ({
+                        ...prev,
+                        [activeSection.key]: e.target.value,
+                      }))
                     }
-                    onBlur={saveConsultation}
+                    onBlur={(e) => saveSection(activeSection.key, e.target.value)}
                     rows={14}
                     className="w-full rounded-xl bg-cream border border-black/10 px-4 py-3 text-sm text-black placeholder:text-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold transition resize-none"
                     placeholder="Add notes for this section…"
@@ -342,7 +377,7 @@ export default function Consultation() {
                   </span>
                   <button
                     type="button"
-                    onClick={saveConsultation}
+                    onClick={() => saveSection(activeSection.key, consultation[activeSection.key])}
                     disabled={saving}
                     className="rounded-lg border border-gold px-4 py-2 text-xs tracking-[0.15em] uppercase text-charcoal hover:bg-gold/10 transition disabled:opacity-50"
                   >
