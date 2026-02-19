@@ -251,4 +251,15 @@ export const MALE_SECTION_QUESTIONS = {
       options: ['Immediate', '1–3 months', 'No timeline'],
     },
   ],
+
+  // ─── Section 8: Stylist Observations ───────────────────────────────────────
+  stylist_observations: [
+    {
+      key: 'stylist_notes',
+      label: 'Stylist notes',
+      type: 'text',
+      placeholder: 'Professional observations, recommendations, and key notes…',
+    },
+  ],
+
 }
