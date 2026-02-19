@@ -170,7 +170,7 @@ export const MALE_SECTION_QUESTIONS = {
         'Minimal',
         'Trendy',
         'Classic',
-        'Masculine sharp',
+        'Sharp masculine',
       ],
     },
     {
@@ -248,7 +248,7 @@ export const MALE_SECTION_QUESTIONS = {
       key: 'urgency',
       label: 'Urgency',
       type: 'single',
-      options: ['Immediate', '1–3 months', 'No timeline'],
+      options: ['Immediate', '1-3 months', 'No timeline'],
     },
   ],
 

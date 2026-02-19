@@ -9,6 +9,7 @@ export default function Dashboard() {
   const [clients, setClients] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [deletingClientId, setDeletingClientId] = useState('')
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -38,6 +39,42 @@ export default function Dashboard() {
 
     fetchClients()
   }, [user])
+
+  const handleDeleteClient = async (clientId) => {
+    if (!user || !clientId) return
+
+    const confirmed = window.confirm('Delete this client permanently?')
+    if (!confirmed) return
+
+    setError('')
+    setDeletingClientId(clientId)
+
+    const { error: consultationDeleteError } = await supabase
+      .from('consultations')
+      .delete()
+      .eq('client_id', clientId)
+
+    if (consultationDeleteError) {
+      setError('Unable to delete consultation data for this client.')
+      setDeletingClientId('')
+      return
+    }
+
+    const { error: clientDeleteError } = await supabase
+      .from('clients')
+      .delete()
+      .eq('id', clientId)
+      .eq('stylist_id', user.id)
+
+    if (clientDeleteError) {
+      setError('Unable to delete client right now.')
+      setDeletingClientId('')
+      return
+    }
+
+    setClients((prev) => prev.filter((client) => client.id !== clientId))
+    setDeletingClientId('')
+  }
 
   return (
     <div className="min-h-screen bg-cream text-black">
@@ -159,6 +196,17 @@ export default function Dashboard() {
                         <span className="text-gold group-hover:text-charcoal">
                           Open consultation →
                         </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteClient(client.id)
+                          }}
+                          disabled={deletingClientId === client.id}
+                          className="block mt-2 ml-auto text-[10px] tracking-[0.14em] uppercase text-red-700/80 hover:text-red-700 transition disabled:opacity-50"
+                        >
+                          {deletingClientId === client.id ? 'Deleting…' : 'Delete client'}
+                        </button>
                       </div>
                     </li>
                   ))}
