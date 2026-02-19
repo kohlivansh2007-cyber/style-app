@@ -5,6 +5,17 @@ import { useAuth } from '../auth'
 import { MALE_SECTIONS, FEMALE_SECTIONS } from '../config/consultationSections'
 import { getClientPhotoUrl, uploadClientPhoto } from '../lib/storage'
 import BodyArchitectureQuestionnaire from '../components/BodyArchitectureQuestionnaire'
+import SectionQuestionnaire from '../components/SectionQuestionnaire'
+import { MALE_SECTION_QUESTIONS } from '../config/maleConsultationQuestions'
+
+function buildConsultationUpdatePayload(consultation) {
+  return {
+    consultation,
+    body_architecture: consultation?.body_architecture ?? null,
+    body_fit_architecture: consultation?.body_fit_architecture ?? null,
+    face_grooming: consultation?.face_grooming ?? null,
+  }
+}
 
 export default function Consultation() {
   const { clientId } = useParams()
@@ -69,7 +80,7 @@ export default function Consultation() {
     setSaving(true)
     const { error: updateError } = await supabase
       .from('clients')
-      .update({ consultation })
+      .update(buildConsultationUpdatePayload(consultation))
       .eq('id', clientId)
       .eq('stylist_id', user.id)
 
@@ -83,7 +94,7 @@ export default function Consultation() {
       setSaving(true)
       const { error: updateError } = await supabase
         .from('clients')
-        .update({ consultation: payload })
+        .update(buildConsultationUpdatePayload(payload))
         .eq('id', clientId)
         .eq('stylist_id', user.id)
 
@@ -104,6 +115,18 @@ export default function Consultation() {
       saveConsultationWithPayload(nextConsultation)
     },
     [consultation, saveConsultationWithPayload, client?.gender]
+  )
+
+  const handleFaceGroomingSelect = useCallback(
+    (field, optionValue) => {
+      const sectionKey = 'face_grooming'
+      const current = consultation[sectionKey] || {}
+      const nextFaceGrooming = { ...current, [field]: optionValue }
+      const nextConsultation = { ...consultation, [sectionKey]: nextFaceGrooming }
+      setConsultation(nextConsultation)
+      saveConsultationWithPayload(nextConsultation)
+    },
+    [consultation, saveConsultationWithPayload]
   )
 
   const handleLogout = async () => {
@@ -261,6 +284,13 @@ export default function Consultation() {
                 <BodyArchitectureQuestionnaire
                   value={consultation[activeSection.key] || {}}
                   onSelect={handleBodyArchitectureSelect}
+                  saving={saving}
+                />
+              ) : activeSection.key === 'face_grooming' && client?.gender === 'Male' ? (
+                <SectionQuestionnaire
+                  questions={MALE_SECTION_QUESTIONS.face_grooming}
+                  value={consultation.face_grooming || {}}
+                  onSelect={handleFaceGroomingSelect}
                   saving={saving}
                 />
               ) : activeSection.key === 'generate_blueprint' ? (
