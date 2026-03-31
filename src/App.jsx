@@ -3,6 +3,7 @@ import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import NewClient from './pages/NewClient'
 import Consultation from './pages/Consultation'
+import ConsultationReport from './pages/ConsultationReport'
 import { AuthProvider, useAuth } from './auth'
 
 function PrivateRoute({ children }) {
@@ -36,6 +37,22 @@ function App() {
             element={
               <PrivateRoute>
                 <Dashboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/consultation/:clientId"
+            element={
+              <PrivateRoute>
+                <Consultation />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/consultation/:consultationId/report"
+            element={
+              <PrivateRoute>
+                <ConsultationReport />
               </PrivateRoute>
             }
           />

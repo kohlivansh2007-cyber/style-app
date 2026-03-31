@@ -7,27 +7,27 @@
  */
 
 export const MALE_SECTIONS = [
-  { label: 'Body Architecture',     key: 'body_fit_architecture' },
-  { label: 'Identity & Lifestyle',  key: 'identity_lifestyle' },
-  { label: 'Face & Grooming',       key: 'face_grooming' },
-  { label: 'Color Intelligence',    key: 'color_intelligence' },
-  { label: 'Personal Style',        key: 'personal_style' },
-  { label: 'Wardrobe Audit',        key: 'wardrobe_audit' },
-  { label: 'Transformation Goals',  key: 'transformation_goals' },
-  { label: 'Stylist Observations',  key: 'stylist_observations' },
-  { label: 'Generate Blueprint',    key: 'generate_blueprint' },
+  { label: 'Identity & Life Stage',  key: 'identity' },
+  { label: 'Lifestyle Alignment',    key: 'lifestyle' },
+  { label: 'Personal Color Analysis', key: 'colorAnalysis' },
+  { label: 'Body Harmony',           key: 'bodyHarmony' },
+  { label: 'Style Archetype',        key: 'styleArchetype' },
+  { label: 'Wardrobe Audit',         key: 'wardrobeAudit' },
+  { label: 'Style Goals',            key: 'styleGoals' },
+  { label: 'Grooming',               key: 'grooming' },
+  { label: 'Stylist Notes',          key: 'stylistNotes' },
 ]
 
 export const FEMALE_SECTIONS = [
-  { label: 'Body Architecture',        key: 'body_architecture' },
-  { label: 'Identity & Lifestyle',     key: 'identity_lifestyle' },
-  { label: 'Color Analysis',           key: 'color_analysis' },
-  { label: 'Face & Makeup Analysis',   key: 'face_makeup_analysis' },
-  { label: 'Personal Style Identity',  key: 'personal_style_identity' },
-  { label: 'Wardrobe Audit',           key: 'wardrobe_audit' },
-  { label: 'Transformation Goals',     key: 'transformation_goals' },
-  { label: 'Stylist Observations',     key: 'stylist_observations' },
-  { label: 'Generate Blueprint',       key: 'generate_blueprint' },
+  { label: 'Identity & Life Stage',  key: 'identity' },
+  { label: 'Lifestyle Alignment',    key: 'lifestyle' },
+  { label: 'Personal Color Analysis', key: 'colorAnalysis' },
+  { label: 'Body Harmony',           key: 'bodyHarmony' },
+  { label: 'Style Archetype',        key: 'styleArchetype' },
+  { label: 'Wardrobe Audit',         key: 'wardrobeAudit' },
+  { label: 'Style Goals',            key: 'styleGoals' },
+  { label: 'Grooming',               key: 'grooming' },
+  { label: 'Stylist Notes',          key: 'stylistNotes' },
 ]
 
 /**

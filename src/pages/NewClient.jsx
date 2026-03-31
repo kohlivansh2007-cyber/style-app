@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
-import { useAuth } from '../auth'
 import { uploadClientPhoto } from '../lib/storage'
 
 const GENDERS = [
@@ -11,7 +10,6 @@ const GENDERS = [
 
 export default function NewClient() {
   const navigate = useNavigate()
-  const { user } = useAuth()
   const fileInputRef = useRef(null)
 
   const [name, setName] = useState('')
@@ -42,45 +40,55 @@ export default function NewClient() {
     setPhotoFile(file)
   }
 
+  const handleCreateClient = async () => {
+    try {
+      const { data: userData, error: userError } = await supabase.auth.getUser()
+
+      if (userError || !userData?.user) {
+        console.error('User not authenticated', userError)
+        setError('User not authenticated')
+        return
+      }
+
+      const { data, error } = await supabase
+        .from('clients')
+        .insert([
+          {
+            name: name,
+            gender: gender,
+            user_id: userData.user.id,
+          },
+        ])
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Insert error:', error)
+        setError(error.message)
+        return
+      }
+
+      setError(null)
+      navigate(`/consultation/${data.id}`)
+    } catch (err) {
+      console.error('Unexpected error:', err)
+      setError('Unable to create client. Please try again.')
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!user || !gender) return
+    if (!gender || !name.trim()) {
+      setError('Name and gender are required.')
+      return
+    }
 
     setLoading(true)
     setError('')
 
-    const { data: inserted, error: insertError } = await supabase
-      .from('clients')
-      .insert({
-        stylist_id: user.id,
-        name: name.trim(),
-        gender,
-      })
-      .select('id')
-      .single()
+    await handleCreateClient()
 
-    if (insertError) {
-      setError('Unable to create client. Please try again.')
-      setLoading(false)
-      return
-    }
-
-    if (photoFile) {
-      const result = await uploadClientPhoto(user.id, inserted.id, photoFile)
-      if (result.error) {
-        setError('Client created but photo upload failed. You can add a photo in the consultation.')
-        setLoading(false)
-        navigate(`/clients/${inserted.id}/consultation`)
-        return
-      }
-      await supabase
-        .from('clients')
-        .update({ photo_path: result.path })
-        .eq('id', inserted.id)
-        .eq('stylist_id', user.id)
-    }
-
-    navigate(`/clients/${inserted.id}/consultation`)
+    setLoading(false)
   }
 
   return (

@@ -4,8 +4,14 @@ export default function BodyArchitectureQuestionnaire({
   value = {},
   onSelect,
   saving = false,
+  questions,
 }) {
   const data = typeof value === 'object' && value !== null ? value : {}
+
+  const effectiveQuestions =
+    Array.isArray(questions) && questions.length > 0
+      ? questions
+      : BODY_ARCHITECTURE_QUESTIONS
 
   const handleOptionClick = (questionKey, option, isMultiSelect) => {
     if (isMultiSelect) {
@@ -41,7 +47,7 @@ export default function BodyArchitectureQuestionnaire({
         Selections are saved automatically to this client.
       </p>
 
-      {BODY_ARCHITECTURE_QUESTIONS.map((q) => (
+      {effectiveQuestions.map((q) => (
         <div key={q.key} className="space-y-3">
           <h3 className="text-xs font-medium tracking-[0.2em] uppercase text-charcoal/80">
             {q.label}

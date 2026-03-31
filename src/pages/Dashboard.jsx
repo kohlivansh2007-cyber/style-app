@@ -15,20 +15,36 @@ export default function Dashboard() {
     navigate('/')
   }
 
+  const handleDeleteClient = async (clientId) => {
+    try {
+      const { error } = await supabase.from('clients').delete().eq('id', clientId)
+
+      if (error) {
+        console.error('Delete error:', error)
+        alert(error.message)
+        return
+      }
+
+      setClients((prev) => prev.filter((c) => c.id !== clientId))
+    } catch (err) {
+      console.error('Unexpected delete error:', err)
+    }
+  }
+
   useEffect(() => {
-    async function fetchClients() {
-      if (!user) return
+    const fetchClients = async () => {
       setLoading(true)
       setError('')
 
       const { data, error: fetchError } = await supabase
         .from('clients')
         .select('*')
-        .eq('stylist_id', user.id)
         .order('created_at', { ascending: false })
 
       if (fetchError) {
+        console.error('Fetch clients error:', fetchError)
         setError('Unable to load clients right now.')
+        setClients([])
       } else {
         setClients(data || [])
       }
@@ -37,7 +53,7 @@ export default function Dashboard() {
     }
 
     fetchClients()
-  }, [user])
+  }, [])
 
   return (
     <div className="min-h-screen bg-cream text-black">
@@ -133,18 +149,9 @@ export default function Dashboard() {
                   {clients.map((client) => (
                     <li
                       key={client.id}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() =>
-                        navigate(`/clients/${client.id}/consultation`)
-                      }
-                      onKeyDown={(e) =>
-                        e.key === 'Enter' &&
-                        navigate(`/clients/${client.id}/consultation`)
-                      }
-                      className="group border border-black/10 rounded-2xl bg-white/80 px-4 py-3 flex items-center justify-between hover:border-gold hover:bg-white transition cursor-pointer"
+                      className="group border border-black/10 rounded-2xl bg-white/80 px-4 py-3 flex items-center justify-between hover:border-gold hover:bg-white transition"
                     >
-                      <div>
+                      <div className="flex-1">
                         <p className="text-sm font-medium tracking-[0.12em] uppercase text-black">
                           {client.name}
                         </p>
@@ -155,10 +162,21 @@ export default function Dashboard() {
                             : ''}
                         </p>
                       </div>
-                      <div className="text-right text-[11px] text-charcoal/50">
-                        <span className="text-gold group-hover:text-charcoal">
-                          Open consultation →
-                        </span>
+                      <div className="flex items-center gap-3 text-right text-[11px] text-charcoal/50">
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/consultation/${client.id}`)}
+                          className="rounded-lg border border-charcoal/20 bg-white px-3 py-1.5 text-[11px] tracking-[0.16em] uppercase text-charcoal hover:bg-charcoal/5 transition"
+                        >
+                          Continue Consultation
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteClient(client.id)}
+                          className="text-[11px] text-red-600 hover:text-red-700 transition"
+                        >
+                          Delete
+                        </button>
                       </div>
                     </li>
                   ))}

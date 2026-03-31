@@ -1,0 +1,19 @@
+{
+  "name": "stylist-app-server",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node index.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.1",
+    "axios": "^1.12.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "pdf-lib": "^1.17.1",
+    "pdfkit": "^0.17.2"
+  }
+}
